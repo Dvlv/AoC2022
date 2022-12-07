@@ -16,6 +16,8 @@ struct dir {
     int current_file_idx;
     int size;
     dir_t *parent;
+    dir_t *children[MAX_NUM_DIRS];
+    int current_child_idx;
     dirfile_t *files[50];
 }; 
 
@@ -113,6 +115,9 @@ void parse_ls_line(char current_line[]) {
         new_dir->parent = current_working_dir;
         new_dir->size = 0;
 
+        current_working_dir->children[current_working_dir->current_child_idx] = new_dir;
+        current_working_dir->current_child_idx++;
+
         all_files[all_files_index] = new_dir;
         all_files_index++;
 
@@ -152,7 +157,7 @@ int main() {
     char *current_line;
     size_t n = 100;
 
-    dir_t root_dir = {.name = "/", .parent = NULL, .current_file_idx=0, .size=0};
+    dir_t root_dir = {.name = "/", .parent = NULL, .current_file_idx=0, .size=0, .current_child_idx = 0};
     current_working_dir = &root_dir;
 
     all_files[all_files_index] = &root_dir;
