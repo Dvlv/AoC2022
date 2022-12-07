@@ -20,12 +20,14 @@ struct dir {
 
 int is_parsing_ls = 0;
 dir_t *current_working_dir = NULL;
-dir_t *all_files[MAX_NUM_DIRS]; 
+dir_t *all_files[MAX_NUM_DIRS]; // this should be all_folders but cba to rename
 int all_files_index = 0; // I should learn to do this with malloc
+
+int all_file_sizes[MAX_NUM_DIRS];  // parallell array with all_files, wish C had dicts. Should also really be folder_sizes
+
 
 
 void print_all_files() {
-
     for (int i = 0; i < MAX_NUM_DIRS; i++) {
         dir_t *fld = all_files[i];
         if (fld->name == NULL || fld->name == "" || fld->name == " ") {
@@ -40,13 +42,40 @@ void print_all_files() {
     }
 }
 
+void calculate_dir_total_sizes() {
+    for (int i = 0; i < MAX_NUM_DIRS; i++) {
+        dir_t *d = all_files[i];
+        if (d == NULL) {
+            continue;
+        }
+        size_t total_file_size = 0;
+
+        size_t file_arr_size = sizeof(d->files) / sizeof(dirfile_t*);
+        printf("here dir %d arr_size %d\n", i, file_arr_size);
+
+        for (int j = 0; j < file_arr_size; j++) {
+            dirfile_t *fl = d->files[j];
+            if (fl == NULL) continue;
+            total_file_size += fl->size;
+        }
+        all_file_sizes[i] = total_file_size;
+         // if has parent, add to parent total;
+    }
+}
+
+void display_all_dirs_and_sizes() {
+    for (int i = 0; i < MAX_NUM_DIRS; i++) {
+        dir_t *d = all_files[i];
+        printf("Dir: %s", d->name);
+        printf(" Size: %d\n", all_file_sizes[i]);
+    }
+}
+
+
 dir_t* find_dir_by_name(char dirname[]) {
-    printf("looking for %s\n", dirname);
-    print_all_files();
     for (int i = 0; i < MAX_NUM_DIRS; i++) {
         dir_t *d = all_files[i];
         if (d != NULL && strcmp(d->name, dirname) == 0) {
-            printf("found dir!\n");
             return all_files[i];
         }
     }
@@ -60,7 +89,6 @@ void execute_cd(char dirname[]) {
         dirname[second_last_char] = '\0';
     }
 
-    printf("executing cd to %s\n", dirname);
     current_working_dir = find_dir_by_name(dirname);
 }
 
@@ -97,7 +125,6 @@ void parse_ls_line(char current_line[]) {
 
         print_all_files();
     } else {
-        printf("parsing file 2: %s\n", current_line);
         char fname[50];
         size_t sze;
         sscanf(current_line, "%d %s", &sze, fname);
@@ -113,7 +140,6 @@ void parse_ls_line(char current_line[]) {
         // current working dir segfaulting;
         current_working_dir->files[current_working_dir->current_file_idx] = new_file;
         current_working_dir->current_file_idx++;
-        printf("cwd files: %d, name: %s\n", current_working_dir->current_file_idx, current_working_dir->name);
     }
 
 }
@@ -139,7 +165,6 @@ int main() {
     all_files_index++;
 
     while((getline(&current_line, &n, f)) > 0) {
-        printf("   Current line: %s", current_line);
         if (current_line[0] == '$') {
             toggle_parsing_ls(0);
             parse_command(current_line);
@@ -150,7 +175,8 @@ int main() {
 
     // do I need to free my mallocs before exiting? I imagine the OS takes care of that.
     fclose(f);
-    print_all_files();
+    calculate_dir_total_sizes();
+    display_all_dirs_and_sizes();
 }
 
 
