@@ -2,18 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_NUM_DIRS 100
+#define MAX_NUM_DIRS 500
 
 typedef struct dir dir_t;
 
 typedef struct dirfile {
-    size_t size;
+    int size;
     char name[50];
 } dirfile_t;
 
 struct dir {
     char name[50];
     int current_file_idx;
+    int size;
     dir_t *parent;
     dirfile_t *files[50];
 }; 
@@ -23,7 +24,6 @@ dir_t *current_working_dir = NULL;
 dir_t *all_files[MAX_NUM_DIRS]; // this should be all_folders but cba to rename
 int all_files_index = 0; // I should learn to do this with malloc
 
-int all_file_sizes[MAX_NUM_DIRS];  // parallell array with all_files, wish C had dicts. Should also really be folder_sizes
 
 
 
@@ -33,7 +33,7 @@ void print_all_files() {
         if (fld->name == NULL || fld->name == "" || fld->name == " ") {
             continue;
         }
-        printf("dir: %s, files: %d ", fld->name, fld->current_file_idx);
+        printf("dir: %s, files: %d, size: %d ", fld->name, fld->current_file_idx, fld->size);
         if (fld->parent != NULL) {
             printf("parent: %s\n", fld->parent->name);
         } else {
@@ -42,35 +42,27 @@ void print_all_files() {
     }
 }
 
-void calculate_dir_total_sizes() {
+void print_all_with_max_size(int max_size) {
+    int tot = 0;
     for (int i = 0; i < MAX_NUM_DIRS; i++) {
-        dir_t *d = all_files[i];
-        if (d == NULL) {
+        dir_t *fld = all_files[i];
+        if (fld == NULL || fld->name == NULL || fld->name == "" || fld->name == " ") {
             continue;
         }
-        size_t total_file_size = 0;
-
-        size_t file_arr_size = sizeof(d->files) / sizeof(dirfile_t*);
-        printf("here dir %d arr_size %d\n", i, file_arr_size);
-
-        for (int j = 0; j < file_arr_size; j++) {
-            dirfile_t *fl = d->files[j];
-            if (fl == NULL) continue;
-            total_file_size += fl->size;
+        if ((int) fld->size <= max_size) {
+            printf("dir: %s, files: %d, size: %d \n", fld->name, fld->current_file_idx, fld->size);
+            tot += (int) fld->size;
         }
-        all_file_sizes[i] = total_file_size;
-         // if has parent, add to parent total;
     }
+    printf("  total: %d\n", tot);
 }
 
-void display_all_dirs_and_sizes() {
-    for (int i = 0; i < MAX_NUM_DIRS; i++) {
-        dir_t *d = all_files[i];
-        printf("Dir: %s", d->name);
-        printf(" Size: %d\n", all_file_sizes[i]);
+void add_size_to_dirs(dir_t *dir, int size) {
+    dir->size += size;
+    if (dir->parent != NULL) {
+        add_size_to_dirs(dir->parent, size);
     }
 }
-
 
 dir_t* find_dir_by_name(char dirname[]) {
     for (int i = 0; i < MAX_NUM_DIRS; i++) {
@@ -119,14 +111,14 @@ void parse_ls_line(char current_line[]) {
         new_dir->name[len_to_cpy] = '\0';
         new_dir->current_file_idx = 0;
         new_dir->parent = current_working_dir;
+        new_dir->size = 0;
 
         all_files[all_files_index] = new_dir;
         all_files_index++;
 
-        print_all_files();
     } else {
         char fname[50];
-        size_t sze;
+        int sze;
         sscanf(current_line, "%d %s", &sze, fname);
 
         int len_to_cpy = strlen(fname);
@@ -136,6 +128,8 @@ void parse_ls_line(char current_line[]) {
         strncpy(new_file->name, fname, len_to_cpy);
         new_file->name[len_to_cpy] = '\0';
         new_file->size = sze;
+
+        add_size_to_dirs(current_working_dir, sze);
 
         // current working dir segfaulting;
         current_working_dir->files[current_working_dir->current_file_idx] = new_file;
@@ -158,7 +152,7 @@ int main() {
     char *current_line;
     size_t n = 100;
 
-    dir_t root_dir = {.name = "/", .parent = NULL, .current_file_idx=0};
+    dir_t root_dir = {.name = "/", .parent = NULL, .current_file_idx=0, .size=0};
     current_working_dir = &root_dir;
 
     all_files[all_files_index] = &root_dir;
@@ -175,8 +169,7 @@ int main() {
 
     // do I need to free my mallocs before exiting? I imagine the OS takes care of that.
     fclose(f);
-    calculate_dir_total_sizes();
-    display_all_dirs_and_sizes();
+    print_all_with_max_size(100000);
 }
 
 
