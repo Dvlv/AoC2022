@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_NUM_DIRS 500
+#define MAX_NUM_DIRS 1000
 
 typedef struct dir dir_t;
 
@@ -27,12 +27,10 @@ dir_t *all_files[MAX_NUM_DIRS]; // this should be all_folders but cba to rename
 int all_files_index = 0; // I should learn to do this with malloc
 
 
-
-
 void print_all_files() {
     for (int i = 0; i < MAX_NUM_DIRS; i++) {
         dir_t *fld = all_files[i];
-        if (fld->name == NULL || fld->name == "" || fld->name == " ") {
+        if (fld == NULL) {
             continue;
         }
         printf("dir: %s, files: %d, size: %d ", fld->name, fld->current_file_idx, fld->size);
@@ -61,18 +59,24 @@ void print_all_with_max_size(int max_size) {
 
 void add_size_to_dirs(dir_t *dir, int size) {
     dir->size += size;
+    printf("I am %s and my size is going up by %d\n", dir->name, size);
     if (dir->parent != NULL) {
+        printf("adding size to %s parent %s\n", dir->name, dir->parent->name);
         add_size_to_dirs(dir->parent, size);
     }
+    printf("I am %s and my new size is %d\n", dir->name, dir->size);
 }
 
-dir_t* find_dir_by_name(char dirname[]) {
+dir_t* find_child_by_name(char dirname[]) {
+    if (strcmp(dirname, "/") == 0) return all_files[0]; 
     for (int i = 0; i < MAX_NUM_DIRS; i++) {
-        dir_t *d = all_files[i];
+        dir_t *d = current_working_dir->children[i];
         if (d != NULL && strcmp(d->name, dirname) == 0) {
-            return all_files[i];
+            return current_working_dir->children[i];
         }
     }
+
+    printf("find dir by name null! %s\n", dirname);
 
     return NULL;
 }
@@ -83,7 +87,17 @@ void execute_cd(char dirname[]) {
         dirname[second_last_char] = '\0';
     }
 
-    current_working_dir = find_dir_by_name(dirname);
+    if (dirname[0] == '.' && dirname[1] == '.') {
+
+        if (current_working_dir->name[0] == '/') {
+            return;
+        }
+
+        current_working_dir = current_working_dir->parent;
+        return;
+    }
+
+    current_working_dir = find_child_by_name(dirname);
 }
 
 void toggle_parsing_ls(int is_ls) {
@@ -136,14 +150,11 @@ void parse_ls_line(char current_line[]) {
 
         add_size_to_dirs(current_working_dir, sze);
 
-        // current working dir segfaulting;
         current_working_dir->files[current_working_dir->current_file_idx] = new_file;
         current_working_dir->current_file_idx++;
     }
 
 }
-
-
 
 int main() {
 
@@ -175,6 +186,7 @@ int main() {
     // do I need to free my mallocs before exiting? I imagine the OS takes care of that.
     fclose(f);
     print_all_with_max_size(100000);
+    //print_all_files();
 }
 
 
