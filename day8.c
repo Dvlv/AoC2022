@@ -69,6 +69,49 @@ int can_tree_be_seen(int row, int col) {
 
 }
 
+int get_trees_viewing_score(int col, int row) {
+    int tree_height = trees[col][row];
+    //printf("tree (%d,%d) @ %d\n", col, row, tree_height);
+
+    // left
+    int left_score = 0;
+    for (int i = col-1; i >= 0; i--) {
+        int other_tree = trees[i][row];
+        left_score++;
+        if (other_tree >= tree_height) break;
+    }
+
+    // right
+    int right_score = 0;
+    for (int j = col+1; j < COLS ; j++) {
+        int other_tree = trees[j][row];
+        right_score++;
+        if (other_tree >= tree_height) break;
+    }
+
+    // above
+    int above_score = 0;
+    for (int k = row-1; k >= 0; k--) {
+        int other_tree = trees[col][k];
+        above_score++;
+        if (other_tree >= tree_height) break;
+        
+    }
+
+    // below
+    int below_score = 0;
+    for (int l = row+1; l < ROWS; l++) {
+        int other_tree = trees[col][l];
+        below_score++;
+        if (other_tree >= tree_height) break;
+    }
+
+    int sc = left_score * right_score * above_score * below_score;
+    printf("tree (%d,%d) scores %d (%d,%d,%d,%d) \n", col, row, sc, left_score, right_score, above_score, below_score);
+    return sc;
+
+}
+
 int main() {
 
     FILE *f = fopen("input8.txt", "r");
@@ -94,16 +137,15 @@ int main() {
 
     fclose(f);
 
-    int total_seen = 0;
+    int max_score = 0;
     for (int r = 0; r < ROWS; r++) {
         for (int c = 0; c < COLS; c++) {
-            if (can_tree_be_seen(r, c)) {
-                total_seen++;
-                printf("total seen %d\n", total_seen);
+            int score = get_trees_viewing_score(c, r);
+            if (score > max_score) {
+                max_score = score;
             }
         }
     }
     
-
-    printf("total seen: %d\n", total_seen);
+    printf("max: %d\n", max_score);
 }
