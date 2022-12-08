@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_NUM_DIRS 1000
+#define MAX_NUM_DIRS 500
 
 typedef struct dir dir_t;
 
@@ -25,6 +25,24 @@ int is_parsing_ls = 0;
 dir_t *current_working_dir = NULL;
 dir_t *all_files[MAX_NUM_DIRS]; // this should be all_folders but cba to rename
 int all_files_index = 0; // I should learn to do this with malloc
+
+int get_smallest_dir_size_to_delete(int size_needed) {
+    int smallest_encountered = 100000000;
+
+    for (int i = 0; i < MAX_NUM_DIRS; i++) {
+        printf("i %d\n", i);
+        dir_t *d = all_files[i];
+        printf("searching dir %s\n", d->name);
+        if (d == NULL || d->size == 0) continue;
+        if (d->size >= size_needed && d->size < smallest_encountered) {
+            smallest_encountered = d->size;
+        }
+
+    }
+
+    return smallest_encountered;
+
+}
 
 
 void print_all_files() {
@@ -59,12 +77,9 @@ void print_all_with_max_size(int max_size) {
 
 void add_size_to_dirs(dir_t *dir, int size) {
     dir->size += size;
-    printf("I am %s and my size is going up by %d\n", dir->name, size);
     if (dir->parent != NULL) {
-        printf("adding size to %s parent %s\n", dir->name, dir->parent->name);
         add_size_to_dirs(dir->parent, size);
     }
-    printf("I am %s and my new size is %d\n", dir->name, dir->size);
 }
 
 dir_t* find_child_by_name(char dirname[]) {
@@ -183,10 +198,19 @@ int main() {
         }
     }
 
-    // do I need to free my mallocs before exiting? I imagine the OS takes care of that.
     fclose(f);
-    print_all_with_max_size(100000);
-    //print_all_files();
+    // do I need to free my mallocs before exiting? I imagine the OS takes care of that.
+    // looks like yes!
+    for (int i = 0; i < 50; i++) {
+        for (int j = 0; j < 10; j++) {
+            if (all_files[i]->files == NULL) continue;
+            free(all_files[i]->files[j]);
+        }
+    }
+
+    int nd = 1272621; // got from calcs manually
+    int smallest_to_delete = get_smallest_dir_size_to_delete(nd);
+    printf("smallest %d\n", smallest_to_delete);
 }
 
 
