@@ -12,6 +12,16 @@ typedef struct point {
 point_t* visited[MAX_VISITED_POINTS_LEN];
 int visited_index = 0;
 
+// make these global out of laziness
+point_t current_1 = {.x = 0, .y = 0};
+point_t current_2 = {.x = 0, .y = 0};
+point_t current_3 = {.x = 0, .y = 0};
+point_t current_4 = {.x = 0, .y = 0};
+point_t current_5 = {.x = 0, .y = 0};
+point_t current_6 = {.x = 0, .y = 0};
+point_t current_7 = {.x = 0, .y = 0};
+point_t current_8 = {.x = 0, .y = 0};
+
 int has_point_been_visited_already(int x, int y) {
         //printf("checking point (%d,%d)\n", x, y);
     for (int i = 0; i < MAX_VISITED_POINTS_LEN; i++) {
@@ -112,7 +122,15 @@ void process_move(point_t *current_h, point_t *current_t, char dir, int amt) {
         //printf("--- %d %c ---\n", amt, dir);
     for (int i = 0; i < amt; i++) {
         move_h(current_h, dir);
-        move_t_based_on_h(current_t, current_h);
+        move_t_based_on_h(&current_1, current_h);  // 1 & h
+        move_t_based_on_h(&current_2, &current_1);  // 2 & 1
+        move_t_based_on_h(&current_3, &current_2);  // 3 & 2
+        move_t_based_on_h(&current_4, &current_3);  // 4 & 3
+        move_t_based_on_h(&current_5, &current_4);  // 5 & 4
+        move_t_based_on_h(&current_6, &current_5);  // 6 & 5
+        move_t_based_on_h(&current_7, &current_6);  // 7 & 6
+        move_t_based_on_h(&current_8, &current_7);  // 8 & 7
+        move_t_based_on_h(current_t, &current_8);  // t & 8
         //printf("after move_t, h is (%d,%d) ;", current_h->x, current_h->y);
         add_visited_point(current_t->x, current_t->y);
         //printf("H to (%d,%d) ; ", current_h->x, current_h->y);
