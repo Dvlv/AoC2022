@@ -2,9 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#define MAX_MONKEY_ITEMS 20
+#define OLD_TIMES_OLD_INT -1
+
 typedef struct monkey {
-    int items[20];
+    int items[MAX_MONKEY_ITEMS];
     char operator;
+    int operation;
     int divisor;
     int throw_true;
     int throw_false;
@@ -15,7 +20,48 @@ int cur_m_idx = 0;
 
 
 void print_monkey(monkey_t *m) {
-    printf("op: %c, div: %d, tt: %d, tf: %d\n", m->operator, m->divisor, m->throw_true, m->throw_false);
+    printf("Items: ");
+    for (int i =0; i < MAX_MONKEY_ITEMS;i++) {
+        printf("%d, ", m->items[i]);
+    }
+    printf("op: %c, opr: %d, div: %d, tt: %d, tf: %d\n", m->operator, m->operation, m->divisor, m->throw_true, m->throw_false);
+}
+
+void shift_monkey_items_fwd(monkey_t *m) {
+    int first_non_zero = MAX_MONKEY_ITEMS;
+
+    for (int i =0; i < MAX_MONKEY_ITEMS;i++) {
+        if (m->items[i] != 0) {
+            if (i == 0) return;
+
+            first_non_zero = i;
+            break;
+        }
+    }
+
+    int new_idx = 0;
+    for (int i = first_non_zero; i < MAX_MONKEY_ITEMS; i++) {
+        m->items[new_idx] = m->items[i];
+        new_idx++;
+    }
+}
+
+void add_to_end_of_money_items(monkey_t *m, int item) {
+    for (int i =0; i < MAX_MONKEY_ITEMS;i++) {
+        if (m->items[i] == 0) {
+            m->items[i] = item;
+            return;
+        }
+    }
+
+    printf("Monkey has no more item space!\n");
+    exit(1);
+
+}
+
+void monkey_throw_item(monkey_t *m1, int item_idx, monkey_t *m2) {
+    add_to_end_of_money_items(m2, m1->items[item_idx]);
+    m1->items[item_idx] = 0;
 }
 
 
@@ -45,7 +91,7 @@ int main() {
         int first_num = atoi(&token[18]);
         token = strtok(NULL, ",");
 
-        int si[20];
+        int si[MAX_MONKEY_ITEMS] = {0};
         int si_idx = 0;
         si[si_idx] = first_num;
         si_idx++;
@@ -59,11 +105,18 @@ int main() {
 
         // operator
         char op;
+        int opr;
         getline(&current_line, &n, f);
         if (strchr(current_line, '+') != NULL) {
             op = '+';
+            sscanf(current_line, "  Operation: new = old + %d", &opr);
         } else {
             op = '*';
+            if (strstr(current_line, "old * old") != NULL) {
+                opr = OLD_TIMES_OLD_INT;
+            } else {
+                sscanf(current_line, "  Operation: new = old * %d", &opr);
+            }
         }
 
         // test
@@ -81,8 +134,12 @@ int main() {
         getline(&current_line, &n, f);
         sscanf(current_line, "    If false: throw to monkey %d", &fm);
 
-        monkey_t m = {.items=si, .operator=op, .divisor=test, .throw_true=tm, .throw_false=fm};
-        monkeys[cur_m_idx] = m;
+        monkey_t m = {.operator=op, .operation=opr, .divisor=test, .throw_true=tm, .throw_false=fm};
+        for (int j = 0; j < MAX_MONKEY_ITEMS; j++) {
+            m.items[j] = si[j];
+        }
+        monkeys[i] = m;
+        getline(&current_line, &n, f); // blank line
     }
 
     for (int i = 0; i < 8; i++) {
